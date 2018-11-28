@@ -4,15 +4,10 @@ from eigen_config.config import Configs
 from sheep.db.mongodb_pool import MongodbDriver
 from pymongo.collection import ObjectId
 
-import oss2
-import requests
-
-import os
-import uuid
-import pathlib
 import logging
 
 DONE = 1
+
 
 @func.register()
 def video_article(material: Material):
@@ -23,6 +18,7 @@ def video_article(material: Material):
         文章ID：material.get("_id")
     """
     # Get input
+    logging.info('video_article: {}'.format(str(material)))
     video_clip_url = material.get("video_clip_url")
     article_id = material.get("_id")
 

@@ -6,6 +6,7 @@ from sheep.oss.oss import OSSDriver
 import oss2
 import requests
 
+import re
 import os
 import uuid
 import pathlib
@@ -19,43 +20,53 @@ def crawl2cdn(material: Material):
     input:
         视频文件地址：material.get("href")
     output:
-        未打标的音频文件CDN地址：material.set("cdn", "cdn://...")
+        未打标的音频文件CDN地址：material.set("cdn_key", "a_key")
     """
+    logging.info('crawl2cdn: {}'.format(str(material)))
     # check href
-    if material.get("href") is None:
-        # TODO 没有怎么处理,所有算子都是
-        logging.error("'href' not found in material")
-        raise Exception
-
     path = pathlib.Path('./downloads')
     path.mkdir(parents=True, exist_ok=True)
-    file_path = str(path.absolute()) + '/' + str(uuid.uuid4())
+    temp_file_path= str(path.absolute()) + '/' + str(uuid.uuid4())
 
-    fetch(material['href'], file_path)
-    cdn = upload(file_path)
-    material['cdn'] = cdn
-    remove_file(file_path)
+    info_filename = fetch(material['href'], temp_file_path)
+    cdn_key = upload(temp_file_path, info_filename)
+    material['cdn_key'] = cdn_key
+    remove_file(temp_file_path)
     return material
 
 
 def fetch(url, file_path):
+    """Download from 'url' to 'file_path' and return a guessed filename"""
     ret = requests.get(url, allow_redirects=True, stream=True)
     with open(file_path, 'wb+') as f:
         for chunk in ret.iter_content(chunk_size=1024):
             if chunk:
                 f.write(chunk)
 
+    if "Content-Disposition" in ret.headers.keys():
+        filename = re.findall("filename=(.+)", ret.headers["Content-Disposition"])[0]
+    else:
+        filename = url.split("/")[-1]
+    return filename
 
-def upload(file_path):
+
+def upload(file_path, info_filename):
+    """upload from file with its info"""
+    _, ext = split_filename(info_filename)
+
     driver = get_oss_driver()
 
-    key = str(uuid.uuid4())
+    key = str(uuid.uuid4()) + '.' + ext
     try:
-        cdn = driver.put_object_from_file(key, file_path, cdn=True)
-        print('cdn'*10, cdn)
+        cdn_key = driver.put_object_from_file(key, file_path)
     except oss2.exceptions.OssError as e:
         logging.error(str(e))
-    return cdn
+    return cdn_key
+
+
+def split_filename(filename):
+    sections = filename.split('.')
+    return '.'.join(sections[:-1]), sections[-1]
 
 
 def remove_file(file_path):
@@ -71,8 +82,16 @@ def get_oss_driver():
     return oss_driver
 
 
+
+
+
+
 if __name__ == '__main__':
     # TODO cdn 地址链接没开
     material = dict(href='https://cdn.aidigger.com/assets/images/official/all.png')
     ret_material = crawl2cdn(material)
     print(ret_material)
+
+    driver = get_oss_driver()
+    url = driver._bucket.sign_url('GET', ret_material['cdn_key'], 300)
+    print(url)
