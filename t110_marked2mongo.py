@@ -12,7 +12,7 @@
 # @func.register()
 # def marked2mongo(material: Material):
 #     """
-#     读取音频文件
+#     保存音频打标信息
 #     input:
 #         一级标签：material.get("level_1")
 #         二级标签：material.get("level_2")
