@@ -8,6 +8,10 @@ from sheep.oss.oss import OSSDriver
 import logging
 
 
+logging.basicConfig()
+logger = logging.getLogger(__name__)
+
+
 @func.register()
 def audio_tag_tree(material: Material):
     """
@@ -25,20 +29,23 @@ def audio_tag_tree(material: Material):
                 }])
     """
     logging.info('audio_tag_tree: {}'.format(str(material)))
-    rds = get_rds()
-    #
-    cursor = rds.find('audio_background',
-                      filter={'$and': [
-                          {"cdn_key": {"$ne": None}},
-                          {"name": {"$ne": None}}
-                      ]},
-                      fields=['name', 'cdn_key'])
-    audio_list = [
-        {"name": each.get('name'),
-         "cdn":  sign_url(each.get('cdn_key'))} for each in cursor
-    ]
-    material['audio_list'] = audio_list
-    return material
+    try:
+        rds = get_rds()
+
+        cursor = rds.find('audio_background',
+                          filter={'$and': [
+                              {"cdn_key": {"$ne": None}},
+                              {"name": {"$ne": None}}
+                          ]},
+                          fields=['name', 'cdn_key'])
+        audio_list = [
+            {"name": each.get('name'),
+            "cdn": sign_url(each.get('cdn_key'))} for each in cursor
+        ]
+        material['audio_list'] = audio_list
+        return material
+    except:
+        logger.error('raising exception in audio_tag_tree', exc_info=True)
 
 
 def get_rds():

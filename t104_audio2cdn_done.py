@@ -1,8 +1,7 @@
-from saber.op.pyscript.src.core import func
 from avalon.material import Material
 from eigen_config.config import Configs
+from saber.op.pyscript.src.core import func
 from sheep.oss.oss import OSSDriver
-
 
 import oss2
 
@@ -11,9 +10,13 @@ import base64
 import logging
 
 
+logging.basicConfig()
+logger = logging.getLogger(__name__)
+
+
 @func.register()
 def audio2cdn(material: Material):
-    logging.info('audio2cdn: {}'.format(str(material)))
+    logging.info('run audio2cdn: {}'.format(str(material)))
     """
     上传音频文件到CDN
     input:
@@ -23,13 +26,16 @@ def audio2cdn(material: Material):
         音频文件cdn地址：material.set("cdn", "cdn://...")
         音频文件名称：material.set("filename_without_ext", "cdn://...")
     """
-    name, ext = split_filename(material.get('filename'))
-    cdn_key = upload(decode(material.get('audio')), ext)
+    try:
+        name, ext = split_filename(material.get('filename'))
+        cdn_key = upload(decode(material.get('audio')), ext)
 
-    material['ext'] = ext
-    material['name'] = name
-    material['cdn_key'] = cdn_key
-    return material
+        material['ext'] = ext
+        material['name'] = name
+        material['cdn_key'] = cdn_key
+        return material
+    except:
+        logger.error('raising exception in audio2cdn', exc_info=True)
 
 
 def decode(encoded_data):

@@ -13,6 +13,10 @@ import pathlib
 import logging
 
 
+logging.basicConfig()
+logger = logging.getLogger(__name__)
+
+
 @func.register()
 def crawl2cdn(material: Material):
     """
@@ -22,17 +26,21 @@ def crawl2cdn(material: Material):
     output:
         未打标的音频文件CDN地址：material.set("cdn_key", "a_key")
     """
-    logging.info('crawl2cdn: {}'.format(str(material)))
+    logging.info('run crawl2cdn: {}'.format(str(material)))
     # check href
-    path = pathlib.Path('./downloads')
-    path.mkdir(parents=True, exist_ok=True)
-    temp_file_path= str(path.absolute()) + '/' + str(uuid.uuid4())
+    try:
+        path = pathlib.Path('./downloads')
+        path.mkdir(parents=True, exist_ok=True)
+        temp_file_path= str(path.absolute()) + '/' + str(uuid.uuid4())
 
-    info_filename = fetch(material['href'], temp_file_path)
-    cdn_key = upload(temp_file_path, info_filename)
-    material['cdn_key'] = cdn_key
-    remove_file(temp_file_path)
-    return material
+        info_filename = fetch(material['href'], temp_file_path)
+        cdn_key = upload(temp_file_path, info_filename)
+        material['cdn_key'] = cdn_key
+        remove_file(temp_file_path)
+        return material
+    except:
+        logger.error('raising exception in crawl2cdn', exc_info=True)
+
 
 
 def fetch(url, file_path):

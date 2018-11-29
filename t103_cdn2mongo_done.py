@@ -1,11 +1,14 @@
-from saber.op.pyscript.src.core import func
 from avalon.material import Material
 from eigen_config.config import Configs
-
+from saber.op.pyscript.src.core import func
 from sheep.db.mongodb_pool import MongodbDriver
 
 import datetime
 import logging
+
+
+logging.basicConfig()
+logger = logging.getLogger(__name__)
 
 
 @func.register()
@@ -17,19 +20,21 @@ def cdn2mongo(material: Material):
                        material.get("name")
                        material.get("ext")
     """
-    logging.info('cdn2mongo: {}'.format(str(material)))
-    rds = get_rds()
+    logger.info('run cdn2mongo: {}'.format(str(material)))
+    try:
+        rds = get_rds()
 
-    doc = {
-        "cdn_key": material.get('cdn_key'),
-        "name": material.get('name'),
-        "ext": material.get('name'),
-        "ctime": datetime.datetime.now()
-    }
+        doc = {
+            "cdn_key": material.get('cdn_key'),
+            "name": material.get('name'),
+            "ext": material.get('name'),
+            "ctime": datetime.datetime.now()
+        }
 
-    # collection.insert_one(doc).inserted_id
-    rds.insert_one('audio_background', doc)
-    return material
+        rds.insert_one('audio_background', doc)
+        return material
+    except:
+        logger.error('raising exception in cdn2mongo', exc_info=True)
 
 
 def get_rds():
